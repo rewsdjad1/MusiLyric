@@ -6,7 +6,7 @@
 #import <substrate.h>
 #import <CommonCrypto/CommonCrypto.h>
 #import <MediaPlayer/MediaPlayer.h>
-#import <MediaRemote.h>
+#import <MediaRemote/MediaRemote.h>
 extern const char *__progname;
 
 #define NSLog(...)
