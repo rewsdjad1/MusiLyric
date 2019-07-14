@@ -1,8 +1,8 @@
-include theos/makefiles/common.mk
+include $(THEOS)/makefiles/common.mk
 
 TWEAK_NAME = MusiLyric
 
-MusiLyric_FILES = /mnt/d/codes/musilyric/Tweak.xm
+MusiLyric_FILES = Tweak.xm
 MusiLyric_FRAMEWORKS = CydiaSubstrate UIKit
 MusiLyric_PRIVATE_FRAMEWORKS = MediaRemote
 MusiLyric_LDFLAGS = -Wl,-segalign,4000
