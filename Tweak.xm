@@ -168,6 +168,16 @@ static void toggleLiricView(id target, SEL targetCallBack, UIView* coverTap, BOO
 		return;
 	}
 	coverTapView = coverTap;
+
+	// 查找所有现有的歌词视图并移除
+	NSMutableArray *lyricViewsToRemove = [NSMutableArray new];
+	for (UIView *subview in [[coverTap superview] subviews]) {
+		if(subview.tag == 4564 || [subview isKindOfClass:[UITextView class]]){
+			[lyricViewsToRemove addObject:subview];
+		}
+	}
+	[lyricViewsToRemove makeObjectsPerformSelector:@selector(removeFromSuperview)];
+
 	if(toggled) {
 		showLiric = [[coverTap superview] viewWithTag:4564]!=nil?YES:NO;
 	}	
@@ -175,8 +185,31 @@ static void toggleLiricView(id target, SEL targetCallBack, UIView* coverTap, BOO
 	if(showLiric) {
 		return;
 	}
+
+	// 保护原生进度条
+	__block UIView *originalProgressBar = nil;
+	[[coverTap superview].subviews enumerateObjectsUsingBlock:^(UIView *view, NSUInteger idx, BOOL *stop) {
+		if([view isKindOfClass:NSClassFromString(@"MPKnockoutProgressBar")]){
+			originalProgressBar = view;
+			*stop = YES;
+		}
+	}];
+
 	[coverTap setUserInteractionEnabled:YES];
-	liricTextField = [[UITextView alloc] initWithFrame:coverTap.frame];
+	// 给进度条留出空间
+	liricTextField = [[UITextView alloc] initWithFrame:CGRectMake(coverTap.frame.origin.x, 
+	coverTap.frame.origin.y, 
+	coverTap.frame.size.width, 
+	coverTap.frame.size.height - (originalProgressBar ? 20 : 0))];
+
+	// 防止快速点击
+	static NSTimeInterval lastTapTime = 0;
+	NSTimeInterval currentTime = [[NSDate date] timeIntervalSince1970];
+	if (currentTime - lastTapTime < 0.5) { // 500毫秒内只响应一次点击
+		return;
+	}
+	lastTapTime = currentTime;
+
 	MLTapGestureRecognizer *singleFingerTap = [[MLTapGestureRecognizer alloc] initWithTarget:target action:targetCallBack];
 	[liricTextField addGestureRecognizer:singleFingerTap];
 	MLTapGestureRecognizer *singleFingerTapCover = [[MLTapGestureRecognizer alloc] initWithTarget:target action:targetCallBack];
@@ -218,6 +251,21 @@ static void toggleLiricView(id target, SEL targetCallBack, UIView* coverTap, BOO
 			}
 		});
 	}
+	
+	//监控进度条状态
+	__weak typeof(originalProgressBar) weakProgressBar = originalProgressBar;
+	[NSTimer scheduledTimerWithTimeInterval:0.1 block:^(NSTimer *timer) {
+		if (!weakProgressBar || weakProgressBar.hidden) {
+			CGRect newFrame = coverTapView.frame;
+			newFrame.size.height += 20; // 恢复高度
+			liricTextField.frame = newFrame;
+		} else {
+			CGRect newFrame = coverTapView.frame;
+			newFrame.size.height -= 20; // 给进度条留空间
+			liricTextField.frame = newFrame;
+		}
+	} repeats:YES];
+
 	} @catch (NSException * e) {
 	}
 }
