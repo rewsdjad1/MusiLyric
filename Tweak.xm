@@ -223,24 +223,26 @@ static void toggleLiricView(id target, SEL targetCallBack, UIView* coverTap, BOO
 }
 
 
-%group Music
 %hook MPAVItem
 %property (nonatomic,retain) id LyricReceived;
 - (id)lyrics
 {
-	__block id retO = %orig;
-	if(!self.LyricReceived) {
-		dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-			if(id retLyric = getLyricNow(self, nil)) {
-				self.LyricReceived = retLyric;
-			} else {
-				if(retO) {
-					self.LyricReceived = retO;
-				}
-			}
-		});
-	}
-	return self.LyricReceived;
+    id originalLyrics = %orig; // 获取原始的iTunes歌词
+    // 如果iTunes歌词存在且不为空，直接返回
+    if (originalLyrics && [originalLyrics length] > 0) {
+        return originalLyrics;
+    }
+    
+    // 只有当没有iTunes歌词时，才进行网络请求
+    if (!self.LyricReceived) {
+        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+            id networkLyrics = getLyricNow(self, nil);
+            if (networkLyrics) {
+                self.LyricReceived = networkLyrics;
+            }
+        });
+    }
+    return self.LyricReceived;
 }
 %end
 %end
